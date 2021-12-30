@@ -1,0 +1,281 @@
+﻿  -------------------------------------------------------------------------------
+  MSX SDCC Make Script Copyright
+  version 00.05.01 - Codename Baltazar
+  Build Debug Level 255
+  -------------------------------------------------------------------------------
+  Filesystem settings...
+  Current dir: C:\DevArea\MSX\projects\Snake\Snake
+  Target file: .\MSXAPP.ROM
+  Object path: .\Debug\objs
+  Binary path: .\Debug\bin
+  MSX dev path: .\..\..\..
+  MSX lib path: .\..\..\..\libs
+  -------------------------------------------------------------------------------
+  Build events settings...
+  Build start action: [NONE]
+  Before compile action: [NONE]
+  After compile action: [NONE]
+  After binary generation action: [NONE]
+  Build end action: [NONE]
+  -------------------------------------------------------------------------------
+  Making a small housecleaning.
+  Done housecleaning.
+  -------------------------------------------------------------------------------
+  Building application settings file...
+  Adding specific ROM settings...
+  Done building application settings file.
+  -------------------------------------------------------------------------------
+  Collecting include cirectories...
+  Collected .
+  Collected ..\..\..\libs\fusion-c\header
+  Done collecting include directories.
+  -------------------------------------------------------------------------------
+  Building application modules...
+  Processing ASM file MSX\ROM\msxromcrt0.s...
+  ## sdasz80 -o "Debug\objs\msxromcrt0.rel" "MSX\ROM\msxromcrt0.s"
+  ARG[1]=sdasz80
+  ARG[2]=-o
+  ARG[3]="Debug\objs\msxromcrt0.rel"
+  ARG[4]="MSX\ROM\msxromcrt0.s"
+  Processing C file msxromapp.c...
+  ## sdcc -V --verbose -mz80 -c -I"." -I"..\..\..\libs\fusion-c\header" -o "Debug\objs\msxromapp.rel" "msxromapp.c"
+  ARG[1]=sdcc
+  ARG[2]=-V
+  ARG[3]=--verbose
+  ARG[4]=-mz80
+  ARG[5]=-c
+  ARG[6]=-I"."
+  ARG[7]=-I"..\..\..\libs\fusion-c\header"
+  ARG[8]=-o
+  ARG[9]="Debug\objs\msxromapp.rel"
+  ARG[10]="msxromapp.c"
+  sdcc: Calling preprocessor...
+  sdcc: sdcpp -nostdinc -Wall -std=c11 -I"." -I"..\..\..\libs\fusion-c\header" -obj-ext=.rel -D__SDCC_STACK_AUTO -D__SDCC_CHAR_UNSIGNED -D__SDCC_INT_LONG_REENT -D__SDCC_FLOAT_REENT -D__SDCC=4_1_0 -D__SDCC_VERSION_MAJOR=4 -D__SDCC_VERSION_MINOR=1 -D__SDCC_VERSION_PATCH=0 -D__SDCC_REVISION=12072 -D__SDCC_z80 -D__STDC_NO_COMPLEX__=1 -D__STDC_NO_THREADS__=1 -D__STDC_NO_ATOMICS__=1 -D__STDC_NO_VLA__=1 -D__STDC_ISO_10646__=201409L -D__STDC_UTF_16__=1 -D__STDC_UTF_32__=1 -isystem "C:\Program Files\SDCC\bin\..\include\z80" -isystem "C:\Program Files\SDCC\bin\..\include"  "msxromapp.c" 
+  + C:\PROGRA~1\SDCC\bin\sdcpp.exe -nostdinc -Wall -std=c11 -I"." -I"..\..\..\libs\fusion-c\header" -obj-ext=.rel -D__SDCC_STACK_AUTO -D__SDCC_CHAR_UNSIGNED -D__SDCC_INT_LONG_REENT -D__SDCC_FLOAT_REENT -D__SDCC=4_1_0 -D__SDCC_VERSION_MAJOR=4 -D__SDCC_VERSION_MINOR=1 -D__SDCC_VERSION_PATCH=0 -D__SDCC_REVISION=12072 -D__SDCC_z80 -D__STDC_NO_COMPLEX__=1 -D__STDC_NO_THREADS__=1 -D__STDC_NO_ATOMICS__=1 -D__STDC_NO_VLA__=1 -D__STDC_ISO_10646__=201409L -D__STDC_UTF_16__=1 -D__STDC_UTF_32__=1 -isystem "C:\Program Files\SDCC\bin\..\include\z80" -isystem "C:\Program Files\SDCC\bin\..\include"  "msxromapp.c" 
+  sdcc: Generating code...
+  sdcc: Calling assembler...
+  sdcc: sdasz80 -plosgffw "Debug\objs\msxromapp.rel" "Debug\objs\msxromapp".asm
+  + C:\PROGRA~1\SDCC\bin\sdasz80.exe -plosgffw "Debug\objs\msxromapp.rel" "Debug\objs\msxromapp".asm
+  Done building application modules.
+  -------------------------------------------------------------------------------
+  Collecting libraries...
+  Collected ..\..\..\libs\fusion-c\lib\fusion.lib
+  Done collecting libraries.
+  -------------------------------------------------------------------------------
+  Determining CODE-LOC...
+  Analyzing Debug\objs\msxromcrt0.rel...
+  FILE_START is 0x4000.
+  _HEADER segment size is 0x0000001C.
+  CODE-LOC determined to be 0x0000401C.
+  -------------------------------------------------------------------------------
+  Compiling...
+  ## sdcc -V --verbose --opt-code-size --code-loc 0x0000401C --data-loc 0xC000 -mz80 --no-std-crt0 "Debug\objs\msxromcrt0.rel" "Debug\objs\msxromapp.rel" "..\..\..\libs\fusion-c\lib\fusion.lib" -I"." -I"..\..\..\libs\fusion-c\header" -o "Debug\objs\MSXAPP.IHX"
+  ARG[1]=sdcc
+  ARG[2]=-V
+  ARG[3]=--verbose
+  ARG[4]=--opt-code-size
+  ARG[5]=--code-loc
+  ARG[6]=0x0000401C
+  ARG[7]=--data-loc
+  ARG[8]=0xC000
+  ARG[9]=-mz80
+  ARG[10]=--no-std-crt0
+  ARG[11]="Debug\objs\msxromcrt0.rel"
+  ARG[12]="Debug\objs\msxromapp.rel"
+  ARG[13]="..\..\..\libs\fusion-c\lib\fusion.lib"
+  ARG[14]=-I"."
+  ARG[15]=-I"..\..\..\libs\fusion-c\header"
+  ARG[16]=-o
+  ARG[17]="Debug\objs\MSXAPP.IHX"
+  sdcc: Calling linker...
+  sdcc: sdldz80 -nf "Debug\objs\MSXAPP.lk"
+  + C:\PROGRA~1\SDCC\bin\sdldz80.exe -nf "Debug\objs\MSXAPP.lk"
+  Done compiling.
+  -------------------------------------------------------------------------------
+  Build MSX binary...
+  ## hex2bin -v -e ROM -l 4000 "Debug\objs\MSXAPP.IHX"
+  ARG[1]=hex2bin
+  ARG[2]=-v
+  ARG[3]=-e
+  ARG[4]=ROM
+  ARG[5]=-l
+  ARG[6]=4000
+  ARG[7]="Debug\objs\MSXAPP.IHX"
+  Physical Address: 00004000
+  Highest_Address: 0000401B
+  Physical Address: 0000487C
+  Highest_Address: 0000488C
+  Physical Address: 0000401C
+  Highest_Address: 0000488C
+  Physical Address: 0000403C
+  Highest_Address: 0000488C
+  Physical Address: 0000405C
+  Highest_Address: 0000488C
+  Physical Address: 0000407C
+  Highest_Address: 0000488C
+  Physical Address: 0000409C
+  Highest_Address: 0000488C
+  Physical Address: 000040BC
+  Highest_Address: 0000488C
+  Physical Address: 000040DC
+  Highest_Address: 0000488C
+  Physical Address: 000040FC
+  Highest_Address: 0000488C
+  Physical Address: 0000411C
+  Highest_Address: 0000488C
+  Physical Address: 0000413C
+  Highest_Address: 0000488C
+  Physical Address: 0000415C
+  Highest_Address: 0000488C
+  Physical Address: 0000417C
+  Highest_Address: 0000488C
+  Physical Address: 0000419C
+  Highest_Address: 0000488C
+  Physical Address: 000041BC
+  Highest_Address: 0000488C
+  Physical Address: 000041DC
+  Highest_Address: 0000488C
+  Physical Address: 000041FC
+  Highest_Address: 0000488C
+  Physical Address: 0000421C
+  Highest_Address: 0000488C
+  Physical Address: 0000423C
+  Highest_Address: 0000488C
+  Physical Address: 0000425C
+  Highest_Address: 0000488C
+  Physical Address: 0000427C
+  Highest_Address: 0000488C
+  Physical Address: 0000429C
+  Highest_Address: 0000488C
+  Physical Address: 000042BC
+  Highest_Address: 0000488C
+  Physical Address: 000042DC
+  Highest_Address: 0000488C
+  Physical Address: 000042FC
+  Highest_Address: 0000488C
+  Physical Address: 0000431C
+  Highest_Address: 0000488C
+  Physical Address: 0000433C
+  Highest_Address: 0000488C
+  Physical Address: 0000435C
+  Highest_Address: 0000488C
+  Physical Address: 0000437C
+  Highest_Address: 0000488C
+  Physical Address: 0000439C
+  Highest_Address: 0000488C
+  Physical Address: 000043BC
+  Highest_Address: 0000488C
+  Physical Address: 000043DC
+  Highest_Address: 0000488C
+  Physical Address: 000043FC
+  Highest_Address: 0000488C
+  Physical Address: 0000441C
+  Highest_Address: 0000488C
+  Physical Address: 0000443C
+  Highest_Address: 0000488C
+  Physical Address: 0000445C
+  Highest_Address: 0000488C
+  Physical Address: 0000447C
+  Highest_Address: 0000488C
+  Physical Address: 0000449C
+  Highest_Address: 0000488C
+  Physical Address: 000044BC
+  Highest_Address: 0000488C
+  Physical Address: 000044DC
+  Highest_Address: 0000488C
+  Physical Address: 000044FC
+  Highest_Address: 0000488C
+  Physical Address: 0000451C
+  Highest_Address: 0000488C
+  Physical Address: 0000453C
+  Highest_Address: 0000488C
+  Physical Address: 0000455C
+  Highest_Address: 0000488C
+  Physical Address: 0000457C
+  Highest_Address: 0000488C
+  Physical Address: 0000459C
+  Highest_Address: 0000488C
+  Physical Address: 000045BC
+  Highest_Address: 0000488C
+  Physical Address: 000045DC
+  Highest_Address: 0000488C
+  Physical Address: 000045FC
+  Highest_Address: 0000488C
+  Physical Address: 0000461C
+  Highest_Address: 0000488C
+  Physical Address: 0000463C
+  Highest_Address: 0000488C
+  Physical Address: 0000465C
+  Highest_Address: 0000488C
+  Physical Address: 0000467C
+  Highest_Address: 0000488C
+  Physical Address: 0000469C
+  Highest_Address: 0000488C
+  Physical Address: 000046BC
+  Highest_Address: 0000488C
+  Physical Address: 000046DC
+  Highest_Address: 0000488C
+  Physical Address: 000046FC
+  Highest_Address: 0000488C
+  Physical Address: 0000471C
+  Highest_Address: 0000488C
+  Physical Address: 0000473C
+  Highest_Address: 0000488C
+  Physical Address: 0000475C
+  Highest_Address: 0000488C
+  Physical Address: 0000477C
+  Highest_Address: 0000488C
+  Physical Address: 0000479C
+  Highest_Address: 0000488C
+  Physical Address: 000047BC
+  Highest_Address: 0000488C
+  Physical Address: 000047DC
+  Highest_Address: 0000488C
+  Physical Address: 000047FC
+  Highest_Address: 0000488C
+  Physical Address: 0000481C
+  Highest_Address: 0000488C
+  Physical Address: 0000483C
+  Highest_Address: 0000488C
+  Physical Address: 0000485C
+  Highest_Address: 0000488C
+  End of File record
+  End of File record
+  hex2bin v2.5, Copyright (C) 2017 Jacques Pelletier & contributors
+  
+  Allocate_Memory_and_Rewind:
+  Lowest address:   00004000
+  Highest address:  00007FFF
+  Starting address: 00004000
+  Max Length:       16384
+  
+  Binary file start = 00004000
+  Records start     = 00004000
+  Highest address   = 00007FFF
+  Pad Byte          = FF
+  Done building MSX binary.
+  -------------------------------------------------------------------------------
+  Moving MSX binary...
+  ## copy Debug\objs\*.ROM Debug\bin\
+  ARG[1]=copy
+  ARG[2]=Debug\objs\*.ROM
+  ARG[3]=Debug\bin\
+  Debug\objs\MSXAPP.ROM
+          1 file(s) copied.
+  Done moving MSX binary.
+  -------------------------------------------------------------------------------
+  Building symbol file...
+  ## python Make\symbol.py Debug\objs\ MSXAPP -v
+  ARG[1]=python
+  ARG[2]=Make\symbol.py
+  ARG[3]=Debug\objs\
+  ARG[4]=MSXAPP
+  ARG[5]=-v
+  Loaded pattern [a-zA-Z0-9]*init.
+  Loaded pattern _main.
+  Exported symbol main(_main) = 0x0473C.
+  Exported symbol init(init) = 0x04010.
+  Exported symbol gsinit(gsinit) = 0x0487C.
+  Done building symbol file.
+  -------------------------------------------------------------------------------
+  All set. Happy MSX'ing.

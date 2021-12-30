@@ -1,0 +1,11 @@
+-mjwx
+-i Release\objs\MSXAPP.IHX
+-b _CODE = 0x401c
+-b _DATA = 0xc000
+-k C:\Program Files\SDCC\bin\..\lib\z80
+-l ..\..\..\libs\fusion-c\lib\fusion.lib
+-l z80
+Release\objs\msxromcrt0.rel
+Release\objs\msxromapp.rel
+
+-e
