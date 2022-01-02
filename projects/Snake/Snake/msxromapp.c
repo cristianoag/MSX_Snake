@@ -7,13 +7,15 @@
 #include "msx_fusion.h" //fusion c
 #include "screens.h" //game screens
 
-#define NAMETABLE	0x1800  //default initial address for the nametable (6144 in decimal)
+#define NAMETABLE		0x1800  //default initial address for the nametable (6144 in decimal)
+#define PATTERNTABLE	0x0000 
 
 //defines for the tiles that will be used for the game
 #define TILE_GRASS		' '
 #define TILE_SNAKETAIL	'o'
 #define TILE_SNAKEHEAD	'*'
 #define TILE_APPLE		'#'
+#define MOVES_NEW_LEVEL 100
 
 unsigned int snakeHeadPos; //snake head position
 unsigned char direction, lastDirection; //snake direction and lastknown direction
@@ -26,11 +28,11 @@ unsigned int snake[512]; //array to store the snake body
 unsigned int *snakeHead, *snakeTail; //pointers to the snake head and tail
 unsigned int applePos; //position of the random apple
 unsigned char growth; //controls the snake growth
+unsigned char waitFrames, waitMoves, currentLevel; 
 
 unsigned char bonus;
 unsigned int score;
 unsigned int highscore;
-
 
 //asm function to print a char in the screen
 void _print(char* msg) {
@@ -71,13 +73,41 @@ void print(char* msg) {
 	return;
 }
 
+char allJoysticks() {
+	char result;
+	if (result = JoystickRead(0)) return result;
+	if (result = JoystickRead(1)) return result;
+	return JoystickRead(2);
+}
+
+char allTriggers() {
+	return TriggerRead(0) || TriggerRead(1) || TriggerRead(2) || TriggerRead(3) || TriggerRead(4);
+}
+
+void
+buildFont
+()
+{
+	// Italic
+	unsigned char temp;
+	for	(int i = 0; i < 128 ; i++) {
+		for(int j =	0; j < 4; j++) {
+			temp = Vpeek(PATTERNTABLE + i *	8 + j);
+			Vpoke(PATTERNTABLE + i * 8 + j, temp >> 1 );
+		}
+	}
+}
+
 //prints the game title screen
 void title() {
 	Cls(); //clear the screen
 	_print(titleScreen); //print the title screen
 
-	while (Inkey() > 0) {}
-	InputChar(); //wait for a key
+	//while (JoystickRead(0) || TriggerRead(0)) {} //waits for key release
+	//while (!(JoystickRead(0) || TriggerRead(0))) {} //waits for key press
+	//InputChar(); //wait for a key
+	while (allJoysticks() || allTriggers()) {}	// waits for key release
+	while (!(allJoysticks() || allTriggers())) {}	// waits for key press
 }
 
 //drop an apple to the a garden free space
@@ -102,6 +132,11 @@ void game() {
 	//initialize game variables
 	score = 0;
     
+	//initialize difficulty and moves to change level
+	waitFrames = 15;
+	waitMoves = MOVES_NEW_LEVEL;
+	currentLevel = 1;
+
 	//print the highscore
 	Locate(18, 23);
 	PrintNumber(highscore);
@@ -128,7 +163,7 @@ void game() {
 
 		//wait until BIOS changes the value of Jiffy
 		while (lastJiffy == Peekw(BIOS_JIFFY)) {	
-			joy = JoystickRead(CURSORKEYS); //read the keyboard value
+			joy = allJoysticks(); //read the value of any joystick or keyboard
 			
 			//logic to avoid the issue with pushing opposite direction
 			if ((((lastDirection == UP) || (lastDirection == DOWN)) && ((joy == RIGHT) || (joy == LEFT))) ||
@@ -136,9 +171,18 @@ void game() {
 				direction = joy;
 		}
 
-		//from this point, 1 pass each 15 frames
-		if (Peekw(BIOS_JIFFY) >= 15)
+		//from this point, 1 pass each waitFrames(difficulty) frames
+		if (Peekw(BIOS_JIFFY) >= waitFrames)
 		{
+			waitMoves--; //decrement the moves to change level
+			//controls level changes
+			if (!waitMoves) {
+				Locate(29, 23); //position to print the current level number
+				PrintNumber(++currentLevel); //print the level
+				waitFrames--; //speed up the game by reducing the the waitFrames countes
+				waitMoves = 100; //reset the level control counter
+			}
+
 			//check the direction being pushed
 			switch (direction) {
 			case UP:
@@ -215,8 +259,11 @@ void game() {
 void gameOver() {
 	Locate(0, 10);
 	print(gameOverMsg); //print the game over message
-	while (Inkey() > 0) {} 
-	InputChar(); //wait for the user
+	//while (JoystickRead(0) || TriggerRead(0)) {} //waits for key release
+	//while (!(JoystickRead(0) || TriggerRead(0))) {} //waits for key press
+	//InputChar(); //wait for the user
+	while (allJoysticks() || allTriggers()) {}	// waits for key release
+	while (!(allJoysticks() || allTriggers())) {}	// waits for key press
 }
 
 //main loop for the game
@@ -224,7 +271,8 @@ void main(void) {
 	KeySound(0); //turn off the msx beep when pushing keys
 	Screen(1); //sets screen mode 1
 	Width(32); //ensures 32 columns
-	//SetColors(255, 0, 0); //set the color for the screen 
+	SetColors(12, 3, 1); //set the color for the screen 
+	//buildFont();
 	highscore = 0;
 
 	//game infinite loop
