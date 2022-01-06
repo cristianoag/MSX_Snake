@@ -6,16 +6,12 @@
 #include "MSX/BIOS/msxbios.h" //bios definitions
 #include "msx_fusion.h" //fusion c
 #include "screens.h" //game screens
+#include "tiles.h" //tiles for the game
 
-#define NAMETABLE		0x1800  //default initial address for the nametable (6144 in decimal)
-#define PATTERNTABLE	0x0000 
+#define NAMETABLE		0x1800 //default initial address for the nametable (6144 in decimal)
+#define PATTERNTABLE	0x0000 //default address for the pattern table in screen 1
 
-//defines for the tiles that will be used for the game
-#define TILE_GRASS		' '
-#define TILE_SNAKETAIL	'o'
-#define TILE_SNAKEHEAD	'*'
-#define TILE_APPLE		'#'
-#define MOVES_NEW_LEVEL 100
+#define MOVES_NEW_LEVEL 100 //amount of moves to change the game level
 
 unsigned int snakeHeadPos; //snake head position
 unsigned char direction, lastDirection; //snake direction and lastknown direction
@@ -73,6 +69,41 @@ void print(char* msg) {
 	return;
 }
 
+//char map function for debug
+#ifdef DEBUG
+void charMap() {
+	for (int y = 0; y < 16; y++) {
+		//print the first line 0 to F
+		Vpoke(NAMETABLE + 2 + y, y < 10 ? '0' + y : 'A' - 10 + y);
+		//print the first column 0 to F
+		Vpoke(NAMETABLE + 64 + (y * 32), y < 10 ? '0' + y : 'A' - 10 + y);
+		for (int x = 0; x < 16; x++)
+			//print the chars 
+			Vpoke(NAMETABLE + 66 + y * 32 + x, y * 16 + x);
+	}
+}
+#endif
+
+//transfers a data block from RAM to VRAM
+void blocktoVRAM(int VRAMAddr, char* RAMAddr, int blockLength) {
+	VpokeFirst(VRAMAddr);
+	while(blockLength > 0) {
+		VpokeNext(*(RAMAddr++));
+		blockLength--;
+	}
+}
+
+//build the game tiles
+void buildTiles() {
+	
+	blocktoVRAM(PATTERNTABLE + TILE_APPLE * 8, tiles_apple, sizeof(tiles_apple)); //apple
+	blocktoVRAM(PATTERNTABLE + TILE_SNAKEHEAD * 8, tiles_snakeHead, sizeof(tiles_snakeHead)); //head
+	blocktoVRAM(PATTERNTABLE + TILE_SNAKETAIL * 8, tiles_snakeTail, sizeof(tiles_snakeTail)); //tail
+	blocktoVRAM(PATTERNTABLE + TILE_HEADXPLOD * 8, tiles_headXplod, sizeof(tiles_headXplod));
+	blocktoVRAM(PATTERNTABLE + TILE_VINE * 8, tiles_vine, sizeof(tiles_vine)); //vine
+	blocktoVRAM(PATTERNTABLE + TILE_GRASS * 8, tiles_grass, sizeof(tiles_grass)); //grass
+}
+
 char allJoysticks() {
 	char result;
 	if (result = JoystickRead(0)) return result;
@@ -103,9 +134,6 @@ void title() {
 	Cls(); //clear the screen
 	_print(titleScreen); //print the title screen
 
-	//while (JoystickRead(0) || TriggerRead(0)) {} //waits for key release
-	//while (!(JoystickRead(0) || TriggerRead(0))) {} //waits for key press
-	//InputChar(); //wait for a key
 	while (allJoysticks() || allTriggers()) {}	// waits for key release
 	while (!(allJoysticks() || allTriggers())) {}	// waits for key press
 }
@@ -233,7 +261,7 @@ void game() {
 			}
 						
 			Vpoke(*snakeHead, TILE_SNAKETAIL); //replaces the old head with a tail segment
-			Vpoke(snakeHeadPos, TILE_SNAKEHEAD); //draws the head in the new position
+			Vpoke(snakeHeadPos, TILE_SNAKEHEAD + (direction -1)/2); //draws the head in the new position
 			snakeHead++;
 			if (snakeHead > &snake[511]) snakeHead = snake;
 			*snakeHead = snakeHeadPos;
@@ -251,6 +279,7 @@ void game() {
 	}
 
 	Beep();
+	Vpoke(snakeHeadPos, TILE_HEADXPLOD + 3);
 	Pokew(BIOS_JIFFY, 0); //reset bios jiffy
 	while (Peek(BIOS_JIFFY) < 40) {} //wait 40 cycles
 }
@@ -258,10 +287,8 @@ void game() {
 //game over routine
 void gameOver() {
 	Locate(0, 10);
-	print(gameOverMsg); //print the game over message
-	//while (JoystickRead(0) || TriggerRead(0)) {} //waits for key release
-	//while (!(JoystickRead(0) || TriggerRead(0))) {} //waits for key press
-	//InputChar(); //wait for the user
+	_print(gameOverMsg); //print the game over message
+
 	while (allJoysticks() || allTriggers()) {}	// waits for key release
 	while (!(allJoysticks() || allTriggers())) {}	// waits for key press
 }
@@ -272,8 +299,16 @@ void main(void) {
 	Screen(1); //sets screen mode 1
 	Width(32); //ensures 32 columns
 	SetColors(12, 3, 1); //set the color for the screen 
+	buildTiles(); //calls the function to build the game tiles
 	//buildFont();
 	highscore = 0;
+
+	//if it is in debug mode, print the char map and wait for a key press
+#ifdef DEBUG
+	charMap();
+	while (!(allJoysticks() || allTriggers())) {} // waits until key press
+#endif
+
 
 	//game infinite loop
 	while (true) {

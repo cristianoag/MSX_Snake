@@ -45,6 +45,8 @@
     <NMakeCleanCommandLine>Make\make $(Configuration) clean</NMakeCleanCommandLine>
     <NMakeReBuildCommandLine>Make\make $(Configuration) clean all</NMakeReBuildCommandLine>
     <NMakePreprocessorDefinitions>WIN32_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <IncludePath>C:\DevArea\MSX\libs\fusion-c\header;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\DevArea\MSX\libs\fusion-c\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <NMakeBuildCommandLine>Make\make $(Configuration)</NMakeBuildCommandLine>
@@ -62,6 +64,7 @@
     <ClInclude Include="MSX\BIOS\msxbios.h" />
     <ClInclude Include="screens.h" />
     <ClInclude Include="targetconfig.h" />
+    <ClInclude Include="tiles.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="applicationsettings.s" />
