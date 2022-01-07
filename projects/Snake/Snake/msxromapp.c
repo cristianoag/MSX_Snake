@@ -10,6 +10,7 @@
 
 #define NAMETABLE		0x1800 //default initial address for the nametable (6144 in decimal)
 #define PATTERNTABLE	0x0000 //default address for the pattern table in screen 1
+#define COLORTABLE		0X2000 //default address for the color table in screen 1
 
 #define MOVES_NEW_LEVEL 100 //amount of moves to change the game level
 
@@ -102,6 +103,8 @@ void buildTiles() {
 	blocktoVRAM(PATTERNTABLE + TILE_HEADXPLOD * 8, tiles_headXplod, sizeof(tiles_headXplod));
 	blocktoVRAM(PATTERNTABLE + TILE_VINE * 8, tiles_vine, sizeof(tiles_vine)); //vine
 	blocktoVRAM(PATTERNTABLE + TILE_GRASS * 8, tiles_grass, sizeof(tiles_grass)); //grass
+
+	//blocktoVRAM(COLORTABLE, tileColors_title, sizeof(tileColors_title));
 }
 
 char allJoysticks() {
@@ -131,6 +134,8 @@ buildFont
 
 //prints the game title screen
 void title() {
+	//set colors
+	blocktoVRAM(COLORTABLE, tileColors_game, sizeof(tileColors_game));
 	Cls(); //clear the screen
 	_print(titleScreen); //print the title screen
 
@@ -143,17 +148,19 @@ void dropApple()
 {
 	do {
 		applePos = NAMETABLE + 32 + rand() % (32 * 21);
-
-	} while (Vpeek(applePos) != TILE_GRASS);
+		
+	} while (Vpeek(applePos) != TILE_GRASS_EMPTY);
 
 	Vpoke(applePos, TILE_APPLE);
-	
 }
 
 //main game routine
 void game() {
+	//set colors
+	blocktoVRAM(COLORTABLE, tileColors_game, sizeof(tileColors_game));
+	//seed for the random function
 	srand(Peekw(BIOS_JIFFY));
-
+	
 	Cls(); //clear the screen
 	_print(gameScreen); //print the game screen
 
@@ -181,7 +188,7 @@ void game() {
 	snake[0] = snakeHeadPos - 1;
 	snake[1] = snakeHeadPos;
 	Vpoke(snakeHeadPos - 1, TILE_SNAKETAIL);
-	Vpoke(snakeHeadPos, TILE_SNAKEHEAD);
+	Vpoke(snakeHeadPos, TILE_SNAKEHEAD + 1);
 
 	//drop the first apple
 	dropApple();
@@ -248,10 +255,10 @@ void game() {
 			}
 			else {
 				//check if the snake is being moved by the user and if it is not colliding
-				EoG = (content != TILE_GRASS);
+				EoG = (content != TILE_GRASS_EMPTY);
 			}
 			if (growth == 0) {
-				Vpoke(*snakeTail, TILE_GRASS); //erases the last tail segment
+				Vpoke(*snakeTail, TILE_GRASS_EMPTY); //erases the last tail segment
 				snakeTail++; //new position for the tail 
 				if (snakeTail > &snake[511]) snakeTail = snake;
 			}
@@ -278,8 +285,14 @@ void game() {
 		lastJiffy = Peekw(BIOS_JIFFY);
 	}
 
-	Beep();
+	//if we kill the snake colliding with its tail, use the tile grass background color
+	if (content < TILE_VINE) {
+		Vpoke(COLORTABLE + TILE_HEADXPLOD / 8, 
+			((tileColors_game[TILE_HEADXPLOD / 8] & 0xf0) | (tileColors_game[TILE_GRASS / 8] & 0x0f)));
+	}
+
 	Vpoke(snakeHeadPos, TILE_HEADXPLOD + 3);
+	Beep();
 	Pokew(BIOS_JIFFY, 0); //reset bios jiffy
 	while (Peek(BIOS_JIFFY) < 40) {} //wait 40 cycles
 }
@@ -305,6 +318,7 @@ void main(void) {
 
 	//if it is in debug mode, print the char map and wait for a key press
 #ifdef DEBUG
+	blocktoVRAM(COLORTABLE, tileColors_title, sizeof(tileColors_title));
 	charMap();
 	while (!(allJoysticks() || allTriggers())) {} // waits until key press
 #endif
