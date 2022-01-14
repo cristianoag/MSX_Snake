@@ -17,7 +17,13 @@
 unsigned int snakeHeadPos; //snake head position
 unsigned char direction, lastDirection; //snake direction and lastknown direction
 unsigned char joy; //joystick value
+
 bool EoG; //end of game control
+bool collision; //saves the collision state
+bool levelUP; //change level state control
+
+unsigned char levelUpFrame; //control 1 second (60 frameis in 60hz)
+unsigned char collisionTile; //collision animation frame
 unsigned char content; //used to get the current position of the snake
 unsigned int lastJiffy; //stores the last bios JIFFY
 
@@ -118,9 +124,7 @@ char allTriggers() {
 	return TriggerRead(0) || TriggerRead(1) || TriggerRead(2) || TriggerRead(3) || TriggerRead(4);
 }
 
-void
-buildFont
-()
+void buildFont()
 {
 	// Italic
 	unsigned char temp;
@@ -166,6 +170,7 @@ void game() {
 
 	//initialize game variables
 	score = 0;
+	growth = 0;
     
 	//initialize difficulty and moves to change level
 	waitFrames = 15;
@@ -180,6 +185,9 @@ void game() {
 	direction = RIGHT; //starting direction is right
 	lastDirection = 0; //initially none
 	EoG = false; //the game is starting
+	collision = false;
+	collisionTile = TILE_HEADXPLOD;
+	levelUP = false;
 	Pokew(BIOS_JIFFY, 65); //initialize JIFFY to 65
 
 	//initialize the snake
@@ -207,11 +215,14 @@ void game() {
 		}
 
 		//from this point, 1 pass each waitFrames(difficulty) frames
-		if (Peekw(BIOS_JIFFY) >= waitFrames)
+		if ((Peekw(BIOS_JIFFY) >= waitFrames) && (! collision))
 		{
-			waitMoves--; //decrement the moves to change level
 			//controls level changes
-			if (!waitMoves) {
+			if (!(--waitMoves)) {
+				//next level
+				levelUP = true;
+				levelUpFrame = 0;
+
 				Locate(29, 23); //position to print the current level number
 				PrintNumber(++currentLevel); //print the level
 				waitFrames--; //speed up the game by reducing the the waitFrames countes
@@ -236,31 +247,51 @@ void game() {
 
 			//get the current position of the snake
 			content = Vpeek(snakeHeadPos);
-			//check if the content is an apple
-			if (content == TILE_APPLE) {
-				//the snake eats the apple
+			collision = (content != TILE_GRASS_EMPTY) && (content != TILE_APPLE);
+
+			if (collision) {
+				//collision start
 				
-				dropApple();
-				bonus = (rand() & 5) + 1;
-				growth += bonus;
-				score += bonus;
-				Locate(7, 23);
-				PrintNumber(score);
-				
-				if (score > highscore) {
-					highscore = score;
-					Locate(18, 23);
-					PrintNumber(highscore);
+				//if we kill the snake colliding with its tail, use the tile grass background color
+				if (content < TILE_VINE) {
+					Vpoke(COLORTABLE + TILE_HEADXPLOD / 8,
+						((tileColors_game[TILE_HEADXPLOD / 8] & 0xf0) | (tileColors_game[TILE_GRASS / 8] & 0x0f)));
 				}
+
+				//animation
+				Vpoke(snakeHeadPos, TILE_HEADXPLOD);
+				Beep();
+
 			}
 			else {
-				//check if the snake is being moved by the user and if it is not colliding
-				EoG = (content != TILE_GRASS_EMPTY);
+				//check if the content is an apple
+				if (content == TILE_APPLE) {
+					//the snake eats the apple
+
+					dropApple();
+					bonus = (rand() & 5) + 1;
+					growth += bonus;
+					score += bonus;
+					Locate(7, 23);
+					PrintNumber(score);
+
+					if (score > highscore) {
+						highscore = score;
+						Locate(18, 23);
+						PrintNumber(highscore);
+					}
+				}
+
+				//draws the head in the new position
+				Vpoke(snakeHeadPos, TILE_SNAKEHEAD + (direction - 1) / 2); 
 			}
+
+			//erases the last tail segment
 			if (growth == 0) {
-				Vpoke(*snakeTail, TILE_GRASS_EMPTY); //erases the last tail segment
+				Vpoke(*snakeTail, TILE_GRASS_EMPTY); 
 				snakeTail++; //new position for the tail 
-				if (snakeTail > &snake[511]) snakeTail = snake;
+				if (snakeTail > &snake[511]) 
+					snakeTail = snake;
 			}
 			else
 			{
@@ -268,31 +299,52 @@ void game() {
 			}
 						
 			Vpoke(*snakeHead, TILE_SNAKETAIL); //replaces the old head with a tail segment
-			Vpoke(snakeHeadPos, TILE_SNAKEHEAD + (direction -1)/2); //draws the head in the new position
+						
+			//update the buffer
 			snakeHead++;
 			if (snakeHead > &snake[511]) snakeHead = snake;
 			*snakeHead = snakeHeadPos;
+
 			//updates the last direction executed
 			lastDirection = direction;
-			//reset the JIFFY to 0
-			Pokew(BIOS_JIFFY, 0);
+			Pokew(BIOS_JIFFY, 0); //reset the JIFFY to 0
 		}
 
-		//from this point, 1 pass per frame
-		{}
+		//sound effects and everything that needs to run with the 
+		{
+			//color effect when level changes
+			if (levelUP) {
+				//test if we are in the odd frame
+				if (++levelUpFrame & 1) {
+					//random color
+					Vpoke(COLORTABLE + TILE_SNAKETAIL / 8, 
+						(rand() & 0x00f0) + 3);
+				}
+				else {
+					//next color
+					Vpoke(COLORTABLE + TILE_SNAKETAIL / 8, 
+						tailColors[(currentLevel - 1) % sizeof(tailColors)]);
+				}
+				levelUP = levelUpFrame < 60;
+			}
+		
+			//collision animation
+			if (collision && (Peekw(BIOS_JIFFY) >= 6))  {
+				
+				//paint the next explosion tile in the head
+				Vpoke(snakeHeadPos, ++collisionTile);
+				Pokew(BIOS_JIFFY, 0); //reset the jiffy
+
+				//set the end of game if the last explosion tile is reached
+				EoG = (collisionTile == TILE_HEADXPLOD + 7);
+			}
+		
+		}
 
 		//get the current JIFFY and put it on lastJiffy
 		lastJiffy = Peekw(BIOS_JIFFY);
 	}
-
-	//if we kill the snake colliding with its tail, use the tile grass background color
-	if (content < TILE_VINE) {
-		Vpoke(COLORTABLE + TILE_HEADXPLOD / 8, 
-			((tileColors_game[TILE_HEADXPLOD / 8] & 0xf0) | (tileColors_game[TILE_GRASS / 8] & 0x0f)));
-	}
-
-	Vpoke(snakeHeadPos, TILE_HEADXPLOD + 3);
-	Beep();
+		
 	Pokew(BIOS_JIFFY, 0); //reset bios jiffy
 	while (Peek(BIOS_JIFFY) < 40) {} //wait 40 cycles
 }

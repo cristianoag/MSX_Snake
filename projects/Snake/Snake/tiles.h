@@ -378,3 +378,23 @@ char tileColors_title[] = {
 	0x43, // 0xf0 - Mini Snake
 	0x43, // 0xf8 - Mini Snake
 };
+
+//not using 
+// 0 (border color)
+// 1 (black)
+// 3 (green/background of the grass)
+// 8 (red - apple color)
+// 11 (yellow, low contrast)
+// 15 (white)
+char tailColors[] = {
+	0x23, //3 is the background (green)
+	0x43,
+	0x53,
+	0x63,
+	0x73,
+	0x93,
+	0xa3,
+	0xc3,
+	0xd3,
+	0xe3,
+};
