@@ -7,6 +7,7 @@
 #include "msx_fusion.h" //fusion c
 #include "screens.h" //game screens
 #include "tiles.h" //tiles for the game
+#include "sounds.h" //sounds for the game
 
 #define NAMETABLE		0x1800 //default initial address for the nametable (6144 in decimal)
 #define PATTERNTABLE	0x0000 //default address for the pattern table in screen 1
@@ -21,6 +22,7 @@ unsigned char joy; //joystick value
 bool EoG; //end of game control
 bool collision; //saves the collision state
 bool levelUP; //change level state control
+bool appleEat; //control if when an apple is eaten
 
 unsigned char levelUpFrame; //control 1 second (60 frameis in 60hz)
 unsigned char collisionTile; //collision animation frame
@@ -32,6 +34,8 @@ unsigned int *snakeHead, *snakeTail; //pointers to the snake head and tail
 unsigned int applePos; //position of the random apple
 unsigned char growth; //controls the snake growth
 unsigned char waitFrames, waitMoves, currentLevel; 
+unsigned char appleEatFrame; //count the frames after eating an apple
+unsigned char levelUPSound;
 
 unsigned char bonus;
 unsigned int score;
@@ -171,6 +175,7 @@ void game() {
 	//initialize game variables
 	score = 0;
 	growth = 0;
+	appleEat = false;
     
 	//initialize difficulty and moves to change level
 	waitFrames = 15;
@@ -189,6 +194,11 @@ void game() {
 	collisionTile = TILE_HEADXPLOD;
 	levelUP = false;
 	Pokew(BIOS_JIFFY, 65); //initialize JIFFY to 65
+
+	//initialize PSG (sound)
+	for (int i = 0; i < sizeof(gameSound); i++) {
+		PSGwrite(i, gameSound[i]);
+	}
 
 	//initialize the snake
 	snakeTail = snake; //snakeTail will point to the first snake element
@@ -222,6 +232,8 @@ void game() {
 				//next level
 				levelUP = true;
 				levelUpFrame = 0;
+				levelUPSound = 60;
+				PSGwrite(10, 15);
 
 				Locate(29, 23); //position to print the current level number
 				PrintNumber(++currentLevel); //print the level
@@ -267,8 +279,11 @@ void game() {
 				//check if the content is an apple
 				if (content == TILE_APPLE) {
 					//the snake eats the apple
-
 					dropApple();
+					
+					appleEat = true;
+					appleEatFrame = 16;
+					
 					bonus = (rand() & 5) + 1;
 					growth += bonus;
 					score += bonus;
@@ -284,6 +299,9 @@ void game() {
 
 				//draws the head in the new position
 				Vpoke(snakeHeadPos, TILE_SNAKEHEAD + (direction - 1) / 2); 
+				//moving sound
+				//PSGwrite(13, 4);
+
 			}
 
 			//erases the last tail segment
@@ -312,20 +330,35 @@ void game() {
 
 		//sound effects and everything that needs to run with the 
 		{
-			//color effect when level changes
+			//sound effect when the sneake eats an apple
+			if (appleEat) {
+				PSGwrite(9, --appleEatFrame);
+				appleEat = appleEatFrame > 0;
+			}
+
+			//color and sound effects when level changes
 			if (levelUP) {
 				//test if we are in the odd frame
 				if (++levelUpFrame & 1) {
-					//random color
+					//random color & sound
 					Vpoke(COLORTABLE + TILE_SNAKETAIL / 8, 
 						(rand() & 0x00f0) + 3);
+					PSGwrite(4, rand()); //sound effect - channel C
 				}
 				else {
-					//next color
-					Vpoke(COLORTABLE + TILE_SNAKETAIL / 8, 
-						tailColors[(currentLevel - 1) % sizeof(tailColors)]);
+				//	//next color
+				//	Vpoke(COLORTABLE + TILE_SNAKETAIL / 8, 
+				//		tailColors[(currentLevel - 1) % sizeof(tailColors)]);
+					PSGwrite(4, levelUPSound--);
 				}
-				levelUP = levelUpFrame < 60;
+				if (!(levelUP = levelUpFrame < 60))
+				{
+					PSGwrite(10, 0);
+				}
+			}
+			else  //back to the original color for the snake body
+			{
+				Vpoke(COLORTABLE + TILE_SNAKETAIL / 8,	0x23);
 			}
 		
 			//collision animation
@@ -337,6 +370,10 @@ void game() {
 
 				//set the end of game if the last explosion tile is reached
 				EoG = (collisionTile == TILE_HEADXPLOD + 7);
+
+				for (int i = 0; i < sizeof(xplodSound); i++) {
+					PSGwrite(i, xplodSound[i]);
+				}
 			}
 		
 		}
