@@ -11,13 +11,14 @@
 #include "sprites.h" //sprites
 #include "vdp_sprites.h"
 
-#define NAMETABLE		0x1800 //default initial address for the nametable (6144 in decimal)
-#define PATTERNTABLE	0x0000 //default address for the pattern table in screen 1
-#define COLORTABLE		0X2000 //default address for the color table in screen 1
+#define NAMETABLE				0x1800 //default initial address for the nametable (6144 in decimal)
+#define PATTERNTABLE			0x0000 //default address for the pattern table in screen 1
+#define COLORTABLE				0X2000 //default address for the color table in screen 1
 #define SPRITEPATTERNTABLE		0x3800
 #define SPRITEATTRIBUTETABLE	0x1b00
 
-#define MOVES_NEW_LEVEL 100 //amount of moves to change the game level
+#define MOVES_NEW_LEVEL		100 //amount of moves to change the game level
+#define FRAMES_BONUS_IND	90  //amount of frames to show the indicator of the bonus
 
 unsigned int snakeHeadPos; //snake head position
 unsigned char direction, lastDirection; //snake direction and lastknown direction
@@ -149,12 +150,13 @@ void buildFont()
 void buildSprites() {
 	VDPwriteNi(6, SPRITEPATTERNTABLE >> 11);
 
+	SpriteOn();
 	SpriteReset();
 	Sprite8();
 	SpriteSmall();
 
 	//alternative using a loop and SetSpritePattern from fusion C
-	/*for (int x = 0; x < sizeof(sprite_patterns) / 8; x++) {
+	/*for (unsigned char x = 0; x < sizeof(sprite_patterns) / 8; x++) {
 		SetSpritePattern(x, sprite_patterns + (x * 8), 8);
 	}*/
 
@@ -217,6 +219,8 @@ void game() {
 	collisionTile = TILE_HEADXPLOD;
 	levelUP = false;
 	Pokew(BIOS_JIFFY, 65); //initialize JIFFY to 65
+	appleEatBonusX = 0;
+	appleEatBonusY = 255;
 
 	//initialize PSG (sound)
 	for (int i = 0; i < sizeof(gameSound); i++) {
@@ -306,8 +310,8 @@ void game() {
 					
 					appleEat = true;
 					appleEatFrame = 0;
-					appleEatBonusX = 8 * (snakeHeadPos % 32);
-					appleEatBonusY = 8 * (snakeHeadPos / 32) - 4;
+					appleEatBonusX = 8 * ((snakeHeadPos - NAMETABLE) % 32);
+					appleEatBonusY = 8 * ((snakeHeadPos - NAMETABLE) / 32) - 4;
 
 					bonus = (rand() & 5) + 1;
 					growth += bonus;
@@ -355,20 +359,37 @@ void game() {
 
 		//sound effects and everything that needs to run with the 
 		{
+			//collision animation
+			if (collision && (Peekw(BIOS_JIFFY) >= 6)) {
+
+				//paint the next explosion tile in the head
+				Vpoke(snakeHeadPos, ++collisionTile);
+				Pokew(BIOS_JIFFY, 0); //reset the jiffy
+
+				//set the end of game if the last explosion tile is reached
+				EoG = (collisionTile == TILE_HEADXPLOD + 7);
+
+				for (int i = 0; i < sizeof(xplodSound); i++) {
+					PSGwrite(i, xplodSound[i]);
+				}
+			}
+
 			//sound effect when the snake eats an apple
 			if (appleEat) {
-				if (appleEatFrame < 16) {
+				if (appleEatFrame < 16) 
 					PSGwrite(9, 15-appleEatFrame);
 					if (!(appleEatFrame & 3)) {
-						PutSprite(0, bonus, appleEatBonusX, appleEatBonusY--, BONUS_COLOR);
+						PutSprite(0, bonus, appleEatBonusX, --appleEatBonusY, BONUS_COLOR);
 						PutSprite(1, 9, appleEatBonusX, appleEatBonusY, BONUSBEVEL_COLOR);
 					}
 					if (!(appleEat = (++appleEatFrame < 90) && (!EoG))) {
 						PutSprite(0, 0, 0, 192, 0);
 						PutSprite(1, 0, 0, 192, 0);
+						appleEatBonusX = 0;
+						appleEatBonusY = 255;
 					};
 				}
-			}
+			
 
 			//color and sound effects when level changes
 			if (levelUP) {
@@ -393,21 +414,6 @@ void game() {
 			else  //back to the original color for the snake body
 			{
 				Vpoke(COLORTABLE + TILE_SNAKETAIL / 8,	0x23);
-			}
-		
-			//collision animation
-			if (collision && (Peekw(BIOS_JIFFY) >= 6))  {
-				
-				//paint the next explosion tile in the head
-				Vpoke(snakeHeadPos, ++collisionTile);
-				Pokew(BIOS_JIFFY, 0); //reset the jiffy
-
-				//set the end of game if the last explosion tile is reached
-				EoG = (collisionTile == TILE_HEADXPLOD + 7);
-
-				for (int i = 0; i < sizeof(xplodSound); i++) {
-					PSGwrite(i, xplodSound[i]);
-				}
 			}
 		
 		}
