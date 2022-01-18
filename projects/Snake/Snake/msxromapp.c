@@ -8,10 +8,14 @@
 #include "screens.h" //game screens
 #include "tiles.h" //tiles for the game
 #include "sounds.h" //sounds for the game
+#include "sprites.h" //sprites
+#include "vdp_sprites.h"
 
 #define NAMETABLE		0x1800 //default initial address for the nametable (6144 in decimal)
 #define PATTERNTABLE	0x0000 //default address for the pattern table in screen 1
 #define COLORTABLE		0X2000 //default address for the color table in screen 1
+#define SPRITEPATTERNTABLE		0x3800
+#define SPRITEATTRIBUTETABLE	0x1b00
 
 #define MOVES_NEW_LEVEL 100 //amount of moves to change the game level
 
@@ -35,7 +39,9 @@ unsigned int applePos; //position of the random apple
 unsigned char growth; //controls the snake growth
 unsigned char waitFrames, waitMoves, currentLevel; 
 unsigned char appleEatFrame; //count the frames after eating an apple
-unsigned char levelUPSound;
+unsigned char appleEatBonusX; //coordinate for the sprite showing the bonus (x)
+unsigned char appleEatBonusY; //coordinate for the sprite showing the bonus (y)
+unsigned char levelUPSound; //controls sound when the level changes
 
 unsigned char bonus;
 unsigned int score;
@@ -138,6 +144,23 @@ void buildFont()
 			Vpoke(PATTERNTABLE + i * 8 + j, temp >> 1 );
 		}
 	}
+}
+
+void buildSprites() {
+	VDPwriteNi(6, SPRITEPATTERNTABLE >> 11);
+
+	SpriteReset();
+	Sprite8();
+	SpriteSmall();
+
+	//alternative using a loop and SetSpritePattern from fusion C
+	/*for (int x = 0; x < sizeof(sprite_patterns) / 8; x++) {
+		SetSpritePattern(x, sprite_patterns + (x * 8), 8);
+	}*/
+
+	//alternative using blocktoVRAM function
+	blocktoVRAM(SPRITEPATTERNTABLE, sprite_patterns, sizeof(sprite_patterns));
+
 }
 
 //prints the game title screen
@@ -282,8 +305,10 @@ void game() {
 					dropApple();
 					
 					appleEat = true;
-					appleEatFrame = 16;
-					
+					appleEatFrame = 0;
+					appleEatBonusX = 8 * (snakeHeadPos % 32);
+					appleEatBonusY = 8 * (snakeHeadPos / 32) - 4;
+
 					bonus = (rand() & 5) + 1;
 					growth += bonus;
 					score += bonus;
@@ -330,10 +355,19 @@ void game() {
 
 		//sound effects and everything that needs to run with the 
 		{
-			//sound effect when the sneake eats an apple
+			//sound effect when the snake eats an apple
 			if (appleEat) {
-				PSGwrite(9, --appleEatFrame);
-				appleEat = appleEatFrame > 0;
+				if (appleEatFrame < 16) {
+					PSGwrite(9, 15-appleEatFrame);
+					if (!(appleEatFrame & 3)) {
+						PutSprite(0, bonus, appleEatBonusX, appleEatBonusY--, BONUS_COLOR);
+						PutSprite(1, 9, appleEatBonusX, appleEatBonusY, BONUSBEVEL_COLOR);
+					}
+					if (!(appleEat = (++appleEatFrame < 90) && (!EoG))) {
+						PutSprite(0, 0, 0, 192, 0);
+						PutSprite(1, 0, 0, 192, 0);
+					};
+				}
 			}
 
 			//color and sound effects when level changes
@@ -380,6 +414,7 @@ void game() {
 
 		//get the current JIFFY and put it on lastJiffy
 		lastJiffy = Peekw(BIOS_JIFFY);
+		VDPwriteNi(6, SPRITEPATTERNTABLE >> 11);
 	}
 		
 	Pokew(BIOS_JIFFY, 0); //reset bios jiffy
@@ -403,6 +438,7 @@ void main(void) {
 	SetColors(12, 3, 1); //set the color for the screen 
 	buildTiles(); //calls the function to build the game tiles
 	//buildFont();
+	buildSprites();
 	highscore = 0;
 
 	//if it is in debug mode, print the char map and wait for a key press
