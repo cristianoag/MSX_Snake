@@ -10,6 +10,12 @@
 #include "sounds.h" //sounds for the game
 #include "sprites.h" //sprites
 #include "vdp_sprites.h"
+#include "AY38910BF.h"
+#include "PT3Player.h"
+#include "PT3player_NoteTable2.h"
+#include "2018_nq_skrju_demosong_PT3.h"
+
+#define  HALT __asm halt __endasm   //Z80 instruction: wait for the next interrupt
 
 #define NAMETABLE				0x1800 //default initial address for the nametable (6144 in decimal)
 #define PATTERNTABLE			0x0000 //default address for the pattern table in screen 1
@@ -231,9 +237,17 @@ void title() {
 	Cls(); //clear the screen
 	//_print(titleScreen); //print the title screen
 	buildEden(NAMETABLE, titleScreen, sizeof(titleScreen));
+	
+	Player_Loop(ON);
 
 	while (allJoysticks() || allTriggers()) {}	// waits for key release
-	while (!(allJoysticks() || allTriggers())) {}	// waits for key press
+	while (!(allJoysticks() || allTriggers())) {
+	
+		HALT;
+		PlayAY();   //<-- AY38910BF Library  
+		Player_Decode();
+
+	}	// waits for key press
 }
 
 //drop an apple to the a garden free space
@@ -475,6 +489,8 @@ void game() {
 			{
 				Vpoke(COLORTABLE + TILE_SNAKETAIL / 8,	0x23);
 			}
+
+			
 		
 		}
 
@@ -514,6 +530,10 @@ void main(void) {
 	while (!(allJoysticks() || allTriggers())) {} // waits until key press
 #endif
 
+	Player_Init();
+
+	Player_InitSong((unsigned int)SONG00, (unsigned int)NT2, OFF);
+	AY_TYPE = AY_INTERNAL;
 
 	//game infinite loop
 	while (true) {

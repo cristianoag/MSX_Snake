@@ -13,3 +13,5 @@
 ;----------------------------------------------------------
 ;	Include here your project's REL files
 ;[MSX_LIB_PATH]\fusion-c\include\printf.rel
+[MSX_LIB_PATH]\AY38910BF\include\AY38910BF.rel
+[MSX_LIB_PATH]\PT3Player\include\PT3Player.rel

@@ -45,8 +45,8 @@
     <NMakeCleanCommandLine>Make\make $(Configuration) clean</NMakeCleanCommandLine>
     <NMakeReBuildCommandLine>Make\make $(Configuration) clean all</NMakeReBuildCommandLine>
     <NMakePreprocessorDefinitions>WIN32_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
-    <IncludePath>C:\DevArea\MSX\libs\fusion-c\header;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\DevArea\MSX\libs\fusion-c\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\DevArea\MSX\libs\fusion-c\header;C:\DevArea\MSX\libs\AY38910BF\header;C:\DevArea\MSX\libs\PT3Player\header;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\DevArea\MSX\libs\fusion-c\lib;C:\DevArea\MSX\libs\AY38910BF\include;C:\DevArea\MSX\libs\PT3Player\include;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <NMakeBuildCommandLine>Make\make $(Configuration)</NMakeBuildCommandLine>
@@ -60,6 +60,7 @@
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="2018_nq_skrju_demosong_PT3.h" />
     <ClInclude Include="msxromapp.h" />
     <ClInclude Include="MSX\BIOS\msxbios.h" />
     <ClInclude Include="screens.h" />
