@@ -77,6 +77,60 @@ __endasm;
 #endif
 	return;
 }
+#pragma warning disable format // @formatter:off
+void _blocktoVRAM(int VRAMAddr, char* RAMAddr, int blockLength) {
+#ifndef __INTELLISENSE__
+	__asm
+	ld		hl, #2
+	add		hl, sp
+
+	ld		a, (hl)		;load less significative byte
+	out		(#0x99), a	;write to the VDP
+
+	inc		hl			;point to the most significative byte
+	ld		a, (hl)		;load the most significative byte
+	and		#0x3f		;ignore the two most significative bytes as the VDP has 16K (14 bits)
+	or		#0x40
+	out		(#0x99), a    ;write to the VDP
+
+	inc		hl
+	ld		e, (hl)
+	inc		hl
+	ld		d, (hl)
+
+	inc		hl
+	inc		hl
+
+	ld		b, (hl)
+	push	bc
+
+	dec		hl
+	ld		b, (hl)
+	ld		l, e
+	ld		h, d
+
+	ld		c, #0x98
+label1:
+
+	outi
+	jr		nz, label1
+
+	pop		bc
+	xor		a			; clear a. The same than ld a,0
+	cp		b
+	ret		z
+
+	dec		b   
+	push	bc 
+	ld      b, #255
+
+	jr		label1
+
+	__endasm;
+
+#endif
+}
+#pragma warning restore format // @formatter:on
 
 // print function
 void print(char* msg) {
@@ -114,12 +168,12 @@ void blocktoVRAM(int VRAMAddr, char* RAMAddr, int blockLength) {
 //build the game tiles
 void buildTiles() {
 	
-	blocktoVRAM(PATTERNTABLE + TILE_APPLE * 8, tiles_apple, sizeof(tiles_apple)); //apple
-	blocktoVRAM(PATTERNTABLE + TILE_SNAKEHEAD * 8, tiles_snakeHead, sizeof(tiles_snakeHead)); //head
-	blocktoVRAM(PATTERNTABLE + TILE_SNAKETAIL * 8, tiles_snakeTail, sizeof(tiles_snakeTail)); //tail
-	blocktoVRAM(PATTERNTABLE + TILE_HEADXPLOD * 8, tiles_headXplod, sizeof(tiles_headXplod));
-	blocktoVRAM(PATTERNTABLE + TILE_VINE * 8, tiles_vine, sizeof(tiles_vine)); //vine
-	blocktoVRAM(PATTERNTABLE + TILE_GRASS * 8, tiles_grass, sizeof(tiles_grass)); //grass
+	_blocktoVRAM(PATTERNTABLE + TILE_APPLE * 8, tiles_apple, sizeof(tiles_apple)); //apple
+	_blocktoVRAM(PATTERNTABLE + TILE_SNAKEHEAD * 8, tiles_snakeHead, sizeof(tiles_snakeHead)); //head
+	_blocktoVRAM(PATTERNTABLE + TILE_SNAKETAIL * 8, tiles_snakeTail, sizeof(tiles_snakeTail)); //tail
+	_blocktoVRAM(PATTERNTABLE + TILE_HEADXPLOD * 8, tiles_headXplod, sizeof(tiles_headXplod));
+	_blocktoVRAM(PATTERNTABLE + TILE_VINE * 8, tiles_vine, sizeof(tiles_vine)); //vine
+	_blocktoVRAM(PATTERNTABLE + TILE_GRASS * 8, tiles_grass, sizeof(tiles_grass)); //grass
 
 	//blocktoVRAM(COLORTABLE, tileColors_title, sizeof(tileColors_title));
 }
@@ -160,15 +214,19 @@ void buildSprites() {
 		SetSpritePattern(x, sprite_patterns + (x * 8), 8);
 	}*/
 
+	//alternative 2
+	/*Halt(); //using this halt solves the issue mentioned on VDP access timing at http://map.grauw.nl/articles/vdp_tut.php 
+	SetSpritePattern(0, sprite_patterns , sizeof(sprite_patterns));*/
+
 	//alternative using blocktoVRAM function
-	blocktoVRAM(SPRITEPATTERNTABLE, sprite_patterns, sizeof(sprite_patterns));
+	_blocktoVRAM(SPRITEPATTERNTABLE, sprite_patterns, sizeof(sprite_patterns));
 
 }
 
 //prints the game title screen
 void title() {
 	//set colors
-	blocktoVRAM(COLORTABLE, tileColors_game, sizeof(tileColors_game));
+	_blocktoVRAM(COLORTABLE, tileColors_game, sizeof(tileColors_game));
 	Cls(); //clear the screen
 	_print(titleScreen); //print the title screen
 
@@ -190,7 +248,7 @@ void dropApple()
 //main game routine
 void game() {
 	//set colors
-	blocktoVRAM(COLORTABLE, tileColors_game, sizeof(tileColors_game));
+	_blocktoVRAM(COLORTABLE, tileColors_game, sizeof(tileColors_game));
 	//seed for the random function
 	srand(Peekw(BIOS_JIFFY));
 	
@@ -449,7 +507,7 @@ void main(void) {
 
 	//if it is in debug mode, print the char map and wait for a key press
 #ifdef DEBUG
-	blocktoVRAM(COLORTABLE, tileColors_title, sizeof(tileColors_title));
+	_blocktoVRAM(COLORTABLE, tileColors_title, sizeof(tileColors_title));
 	charMap();
 	while (!(allJoysticks() || allTriggers())) {} // waits until key press
 #endif
