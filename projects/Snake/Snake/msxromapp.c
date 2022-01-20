@@ -48,6 +48,8 @@ unsigned char bonus;
 unsigned int score;
 unsigned int highscore;
 
+extern void buildEden(int VRAMAddr, char* RAMAddr, unsigned int blockLength);
+
 //asm function to print a char in the screen
 void _print(char* msg) {
 #ifndef __INTELLISENSE__
@@ -89,7 +91,7 @@ void _blocktoVRAM(int VRAMAddr, char* RAMAddr, int blockLength) {
 
 	inc		hl			;point to the most significative byte
 	ld		a, (hl)		;load the most significative byte
-	and		#0x3f		;ignore the two most significative bytes as the VDP has 16K (14 bits)
+;	and		#0x3f		;ignore the two most significative bytes as the VDP has 16K (14 bits)
 	or		#0x40
 	out		(#0x99), a    ;write to the VDP
 
@@ -174,8 +176,7 @@ void buildTiles() {
 	_blocktoVRAM(PATTERNTABLE + TILE_HEADXPLOD * 8, tiles_headXplod, sizeof(tiles_headXplod));
 	_blocktoVRAM(PATTERNTABLE + TILE_VINE * 8, tiles_vine, sizeof(tiles_vine)); //vine
 	_blocktoVRAM(PATTERNTABLE + TILE_GRASS * 8, tiles_grass, sizeof(tiles_grass)); //grass
-
-	//blocktoVRAM(COLORTABLE, tileColors_title, sizeof(tileColors_title));
+	_blocktoVRAM(PATTERNTABLE + (TILE_GRASS + 8) * 8, tiles_grass, sizeof(tiles_grass));
 }
 
 char allJoysticks() {
@@ -228,7 +229,8 @@ void title() {
 	//set colors
 	_blocktoVRAM(COLORTABLE, tileColors_game, sizeof(tileColors_game));
 	Cls(); //clear the screen
-	_print(titleScreen); //print the title screen
+	//_print(titleScreen); //print the title screen
+	buildEden(NAMETABLE, titleScreen, sizeof(titleScreen));
 
 	while (allJoysticks() || allTriggers()) {}	// waits for key release
 	while (!(allJoysticks() || allTriggers())) {}	// waits for key press
@@ -253,7 +255,7 @@ void game() {
 	srand(Peekw(BIOS_JIFFY));
 	
 	Cls(); //clear the screen
-	_print(gameScreen); //print the game screen
+	buildEden(NAMETABLE, gameScreen, sizeof(gameScreen));
 
 	//initialize game variables
 	score = 0;
@@ -344,7 +346,7 @@ void game() {
 
 			//get the current position of the snake
 			content = Vpeek(snakeHeadPos);
-			collision = (content != TILE_GRASS_EMPTY) && (content != TILE_APPLE);
+			collision = (content < TILE_GRASS) && (content != TILE_APPLE);
 
 			if (collision) {
 				//collision start
@@ -393,7 +395,7 @@ void game() {
 
 			//erases the last tail segment
 			if (growth == 0) {
-				Vpoke(*snakeTail, TILE_GRASS_EMPTY); 
+				Vpoke(*snakeTail, TILE_GRASS + (rand() & 0x0f)); 
 				snakeTail++; //new position for the tail 
 				if (snakeTail > &snake[511]) 
 					snakeTail = snake;
